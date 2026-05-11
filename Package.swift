@@ -79,8 +79,12 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 "ContainerAPIClient",
                 "ContainerCommands",
+                "container-apiserver",
+                "container-core-images",
+                "container-network-vmnet",
+                "container-runtime-linux",
             ],
-            path: "Sources/CLI"
+            path: "Sources/Multicall"
         ),
         .testTarget(
             name: "IntegrationTests",
@@ -198,7 +202,7 @@ let package = Package(
             path: "Sources/Plugins/K8s",
             exclude: ["config.toml", "Resources"]
         ),
-        .executableTarget(
+        .target(
             name: "container-apiserver",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -295,7 +299,7 @@ let package = Package(
                 "ContainerTestSupport",
             ]
         ),
-        .executableTarget(
+        .target(
             name: "container-core-images",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -341,7 +345,7 @@ let package = Package(
             ],
             path: "Sources/Services/ContainerImagesService/Client"
         ),
-        .executableTarget(
+        .target(
             name: "container-network-vmnet",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -404,7 +408,7 @@ let package = Package(
             dependencies: [],
             path: "Sources/Services/RuntimeLinux/Client"
         ),
-        .executableTarget(
+        .target(
             name: "container-runtime-linux",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
