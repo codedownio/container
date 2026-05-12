@@ -77,17 +77,19 @@ extension Application {
             let containerSystemConfig: ContainerSystemConfig = try ConfigurationLoader.load(
                 configurationFile: ConfigurationLoader.configurationFile(in: appRootPath))
 
-            // Without the true path to the binary in the plist, `container-apiserver` won't launch properly.
-            // Resolve the symlink to get the true binary path before writing the launchd plist.
-            // Gatekeeper / amfid validates code signatures relative to the enclosing .app bundle
-            // hierarchy; launching via a symlink outside the bundle fails that check.
+            // The on-disk `container-apiserver` is a symlink to the multicall binary,
+            // which dispatches based on `basename(argv[0])`. Resolve the symlink for
+            // launchd's `Program` (Gatekeeper / amfid validates the real path) while
+            // passing `container-apiserver` as `argv[0]` so the multicall routes to
+            // the API server entry point.
             // TODO: Can we use the plugin loader to bootstrap the API server?
-            let executableUrl = CommandLine.executablePathUrl
+            let multicallBinary = CommandLine.executablePathUrl
                 .deletingLastPathComponent()
                 .appendingPathComponent("container-apiserver")
                 .resolvingSymlinksInPath()
+                .absolutePath()
 
-            var args = [executableUrl.absolutePath()]
+            var args = ["container-apiserver"]
 
             args.append("start")
             if logOptions.debug {
@@ -112,6 +114,7 @@ extension Application {
                 environment: env,
                 limitLoadToSessionType: [.Aqua, .Background, .System],
                 runAtLoad: true,
+                program: multicallBinary,
                 machServices: ["com.apple.container.apiserver"]
             )
 

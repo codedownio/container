@@ -238,12 +238,18 @@ extension PluginLoader {
         }
 
         let processedArgs = (args ?? ["start"]) + (resourceURL.map { ["--resources", $0.path] } ?? []) + (debug ? ["--debug"] : [])
+        // The on-disk plugin binary is a symlink to the multicall, which dispatches
+        // based on `basename(argv[0])`. Resolve the symlink for launchd's `Program`
+        // (Gatekeeper validates the real path) and pass the plugin name as argv[0]
+        // so the multicall routes to this plugin's entry point.
+        let multicallBinary = plugin.binaryURL.resolvingSymlinksInPath().path
         let plist = LaunchPlist(
             label: id,
-            arguments: [plugin.binaryURL.path] + processedArgs + serviceConfig.defaultArguments,
+            arguments: [plugin.name] + processedArgs + serviceConfig.defaultArguments,
             environment: env,
             limitLoadToSessionType: [.Aqua, .Background, .System],
             runAtLoad: serviceConfig.runAtLoad,
+            program: multicallBinary,
             machServices: plugin.getMachServices(instanceId: instanceId)
         )
 
