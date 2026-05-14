@@ -72,6 +72,10 @@ build:
 	@echo Building container binaries...
 	@$(SWIFT) --version
 	@$(SWIFT_BUILD)
+	@if [ "$(BUILD_CONFIGURATION)" = "release" ]; then \
+		echo Stripping release binary... ; \
+		strip -rSTx "$(BUILD_BIN_DIR)/container" ; \
+	fi
 
 .PHONY: build-tests
 # Shared build stage for every test target: builds the test bundle (and the
