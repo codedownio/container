@@ -57,6 +57,15 @@ build:
 	@echo Building container binaries...
 	@$(SWIFT) --version
 	@$(SWIFT) build -c $(BUILD_CONFIGURATION) $(SWIFT_CONFIGURATION)
+	@if [ "$(BUILD_CONFIGURATION)" = "release" ]; then \
+		echo Stripping release binaries... ; \
+		strip -rSTx \
+			"$(BUILD_BIN_DIR)/container" \
+			"$(BUILD_BIN_DIR)/container-apiserver" \
+			"$(BUILD_BIN_DIR)/container-runtime-linux" \
+			"$(BUILD_BIN_DIR)/container-network-vmnet" \
+			"$(BUILD_BIN_DIR)/container-core-images" ; \
+	fi
 
 .PHONY: cli
 cli:
