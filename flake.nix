@@ -55,14 +55,18 @@
             --config-path "$TMPDIR/config" \
             --security-path "$TMPDIR/security"
 
-          # SwiftPM clones each checkout with git alternates pointing into
-          # .build/repositories. Repack each .git so the checkouts are
-          # self-contained, then drop the alternates file. Without this the
-          # main derivation can't relocate .build/checkouts.
-          for d in .build/checkouts/*/; do
-            /usr/bin/git -C "$d" repack -ad -q 2>/dev/null || true
-            rm -f "$d/.git/objects/info/alternates"
-          done
+          # Strip every per-checkout .git directory. They contain a reflog
+          # with timestamps and the local user's name/email, a config that
+          # hard-codes absolute paths into .build/repositories, an index
+          # with mtimes, and pack files whose byte layout isn't reproducible
+          # — all of which made this FOD's hash drift across machines and
+          # runs. The main build uses `swift build --skip-update`, which
+          # only needs the source trees plus Package.resolved and
+          # workspace-state.json, so the .git dirs are dead weight.
+          rm -rf .build/checkouts/*/.git
+          # repositories/ is just a bare-repo cache that backs `git fetch`.
+          # With --skip-update the main build never reads it.
+          rm -rf .build/repositories
 
           runHook postBuild
         '';
@@ -71,7 +75,6 @@
           runHook preInstall
           mkdir -p $out
           cp -a .build/checkouts $out/checkouts
-          [ -d .build/repositories ] && cp -a .build/repositories $out/repositories || true
           [ -d .build/artifacts ] && cp -a .build/artifacts $out/artifacts || true
           [ -f .build/workspace-state.json ] && cp .build/workspace-state.json $out/workspace-state.json || true
           runHook postInstall
@@ -79,7 +82,7 @@
 
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-gqZ+x/q7gc0/Gvz0vugM8JL8o8qBChKu8gog+or3Hag=";
+        outputHash = "sha256-1wqNyjbbnfZ5+38G1QXe8q4QEpoTbMogr4ibeC4z1/A=";
       };
 
       container = pkgs.stdenvNoCC.mkDerivation {
@@ -110,7 +113,6 @@
           # Seed the SwiftPM workspace from the FOD so the build runs offline.
           mkdir -p .build
           cp -a ${swiftpm-deps}/checkouts .build/checkouts
-          [ -d ${swiftpm-deps}/repositories ] && cp -a ${swiftpm-deps}/repositories .build/repositories || true
           [ -d ${swiftpm-deps}/artifacts ] && cp -a ${swiftpm-deps}/artifacts .build/artifacts || true
           [ -f ${swiftpm-deps}/workspace-state.json ] && cp ${swiftpm-deps}/workspace-state.json .build/workspace-state.json || true
           chmod -R u+w .build
