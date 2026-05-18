@@ -18,6 +18,7 @@ import ArgumentParser
 import ContainerAPIClient
 import ContainerPlugin
 import ContainerResource
+import ContainerXPC
 import Containerization
 import ContainerizationOS
 import Foundation
@@ -34,7 +35,7 @@ extension Application {
         )
 
         @Option(name: .shortAndLong, help: "Launchd prefix for services")
-        var prefix: String = "com.apple.container."
+        var prefix: String = ServiceNamespace.dottedPrefix
 
         @OptionGroup
         public var logOptions: Flags.Logging

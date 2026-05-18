@@ -20,7 +20,7 @@ import Foundation
 import SystemPackage
 
 public enum ClientHealthCheck {
-    static let serviceIdentifier = "com.apple.container.apiserver"
+    static let serviceIdentifier = ServiceNamespace.apiServer
 }
 
 extension ClientHealthCheck {
