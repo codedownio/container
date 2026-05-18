@@ -19,14 +19,28 @@ INSTALL_DIR="/usr/local"
 DELETE_DATA=
 OPTS=0
 
-usage() { 
+# An independent `container` system is identified by its launchd label prefix
+# (CONTAINER_LAUNCH_PREFIX) and its data directory (CONTAINER_APP_ROOT). Set
+# these to uninstall a system started with a custom prefix; they default to the
+# standard values. Note that the `container` binary itself is shared by every
+# system and is always removed regardless of these variables.
+PREFIX="${CONTAINER_LAUNCH_PREFIX:-com.apple.container}"
+APP_ROOT="${CONTAINER_APP_ROOT:-$HOME/Library/Application Support/com.apple.container}"
+
+# Escape regex metacharacters (notably the dots) so the prefix can be used
+# safely inside the grep pattern below.
+PREFIX_RE=$(printf '%s' "$PREFIX" | sed 's/[][\.*^$/]/\\&/g')
+
+usage() {
     echo "Usage: $0 {-d | -k}"
-    echo "Uninstall container" 
-    echo 
+    echo "Uninstall container (system prefix: '$PREFIX')"
+    echo
     echo "Options:"
     echo "d     Delete user data directory."
     echo "k     Don't delete user data directory."
-    echo 
+    echo
+    echo "Set CONTAINER_LAUNCH_PREFIX / CONTAINER_APP_ROOT to target an"
+    echo "independent container system. The shared binary is always removed."
     exit 1
 }
 
@@ -53,8 +67,8 @@ if [ $OPTS != 1 ]; then
     exit 1
 fi
 
-# check if container is still running 
-CONTAINER_RUNNING=$(launchctl list | grep -e 'com\.apple\.container\W')
+# check if container is still running
+CONTAINER_RUNNING=$(launchctl list | grep -e "${PREFIX_RE}"'\W')
 if [ -n "$CONTAINER_RUNNING" ]; then
     echo '`container` is still running. Please ensure the service is stopped by running `container system stop`'
     exit 1
@@ -83,8 +97,8 @@ sudo pkgutil --forget com.apple.container-installer > /dev/null
 echo 'Removed `container` tool and helpers'
 
 if [ "$DELETE_DATA" = true ]; then
-    echo 'Removing `container` user data'
-    sudo rm -rf ~/Library/Application\ Support/com.apple.container
+    echo "Removing \`container\` user data at $APP_ROOT"
+    sudo rm -rf "$APP_ROOT"
     echo 'Removing `container` user defaults'
     defaults delete com.apple.container.defaults > /dev/null 2>&1 || true
 fi
