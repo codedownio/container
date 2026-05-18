@@ -14,8 +14,9 @@
 // limitations under the License.
 //===----------------------------------------------------------------------===//
 
+import ContainerXPC
+
 /// Global constants for the container API clients.
 public enum Constants {
-    /// The keychain ID to use for registry credentials.
-    public static let keychainID = "com.apple.container.registry"
+    public static var keychainID: String { "\(ServiceNamespace.prefix).registry" }
 }

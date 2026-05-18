@@ -43,7 +43,7 @@ public protocol ClientProcess: Sendable {
 }
 
 struct ClientProcessImpl: ClientProcess, Sendable {
-    static let serviceIdentifier = "com.apple.container.apiserver"
+    static let serviceIdentifier = ServiceNamespace.apiServer
 
     /// ID of the process.
     public var id: String {

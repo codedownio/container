@@ -25,7 +25,7 @@ import TerminalProgress
 
 /// A client for interacting with a container runtime service instance.
 public struct RuntimeClient: Sendable {
-    static let label = "com.apple.container.runtime"
+    static let label = ServiceNamespace.runtime
 
     public static func machServiceLabel(runtime: String, id: String) -> String {
         "\(Self.label).\(runtime).\(id)"

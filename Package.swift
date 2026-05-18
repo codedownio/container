@@ -461,6 +461,7 @@ let package = Package(
                 .product(name: "SystemPackage", package: "swift-system"),
                 .product(name: "TOML", package: "swift-toml"),
                 "ContainerVersion",
+                "ContainerXPC",
             ]
         ),
         .testTarget(

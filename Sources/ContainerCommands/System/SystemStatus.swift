@@ -17,6 +17,7 @@
 import ArgumentParser
 import ContainerAPIClient
 import ContainerPlugin
+import ContainerXPC
 import ContainerizationError
 import Foundation
 import Logging
@@ -29,7 +30,7 @@ extension Application {
         )
 
         @Option(name: .shortAndLong, help: "Launchd prefix for services")
-        var prefix: String = "com.apple.container."
+        var prefix: String = ServiceNamespace.dottedPrefix
 
         @Option(name: .long, help: "Format of the output")
         var format: ListFormat = .table

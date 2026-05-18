@@ -94,7 +94,7 @@ public struct ClientImage: Sendable {
 // MARK: ClientImage constants
 
 extension ClientImage {
-    private static let serviceIdentifier = "com.apple.container.core.container-core-images"
+    private static let serviceIdentifier = ServiceNamespace.coreImages
 
     private static func newXPCClient() -> XPCClient {
         XPCClient(service: Self.serviceIdentifier)

@@ -116,13 +116,13 @@ extension Application {
                 env[LogRoot.environmentName] = logRoot.string
             }
             let plist = LaunchPlist(
-                label: "com.apple.container.apiserver",
+                label: ServiceNamespace.apiServer,
                 arguments: args,
                 environment: env,
                 limitLoadToSessionType: [.Aqua, .Background, .System],
                 runAtLoad: true,
                 program: multicallBinary,
-                machServices: ["com.apple.container.apiserver"]
+                machServices: [ServiceNamespace.apiServer]
             )
 
             let plistPath = apiServerDataPath.appending(FilePath.Component("apiserver.plist"))
