@@ -50,7 +50,7 @@ extension ImagesHelper {
         var debug = false
 
         @Option(name: .long, help: "XPC service prefix")
-        var serviceIdentifier: String = "com.apple.container.core.container-core-images"
+        var serviceIdentifier: String = ServiceNamespace.coreImages
 
         var appRoot = ApplicationRoot.url
 

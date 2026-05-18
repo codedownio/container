@@ -110,13 +110,13 @@ extension Application {
                     : FilePath(FileManager.default.currentDirectoryPath).appending(logRoot.components).string
             }
             let plist = LaunchPlist(
-                label: "com.apple.container.apiserver",
+                label: ServiceNamespace.apiServer,
                 arguments: args,
                 environment: env,
                 limitLoadToSessionType: [.Aqua, .Background, .System],
                 runAtLoad: true,
                 program: multicallBinary,
-                machServices: ["com.apple.container.apiserver"]
+                machServices: [ServiceNamespace.apiServer]
             )
 
             let plistURL = apiServerDataUrl.appending(path: "apiserver.plist")

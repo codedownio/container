@@ -38,7 +38,7 @@ public struct NetworkClient: Sendable {
     ///
     /// Pass a different value to ``init(serviceIdentifier:)`` to connect to an
     /// alternative service endpoint, for example during testing.
-    public static let defaultServiceIdentifier = "com.apple.container.apiserver"
+    public static let defaultServiceIdentifier = ServiceNamespace.apiServer
 
     /// The name of the default network created automatically on first use.
     public static let defaultNetworkName = "default"

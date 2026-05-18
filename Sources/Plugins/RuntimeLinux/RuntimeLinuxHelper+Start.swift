@@ -27,7 +27,7 @@ import NIO
 
 extension RuntimeLinuxHelper {
     struct Start: AsyncParsableCommand {
-        static let label = "com.apple.container.runtime.container-runtime-linux"
+        static let label = "\(ServiceNamespace.runtime).container-runtime-linux"
 
         static let configuration = CommandConfiguration(
             commandName: "start",

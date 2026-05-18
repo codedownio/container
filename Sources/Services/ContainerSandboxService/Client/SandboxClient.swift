@@ -25,7 +25,7 @@ import TerminalProgress
 
 /// A client for interacting with a single sandbox.
 public struct SandboxClient: Sendable {
-    static let label = "com.apple.container.runtime"
+    static let label = ServiceNamespace.runtime
 
     public static func machServiceLabel(runtime: String, id: String) -> String {
         "\(Self.label).\(runtime).\(id)"

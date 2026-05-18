@@ -50,7 +50,7 @@ public actor ContainersService {
         }
     }
 
-    private static let machServicePrefix = "com.apple.container"
+    private static let machServicePrefix = ServiceNamespace.prefix
     private static let launchdDomainString = try! ServiceManager.getDomainString()
 
     private let log: Logger

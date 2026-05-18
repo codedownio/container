@@ -27,7 +27,7 @@ import Foundation
 /// container lifecycle operations. All methods that operate on a specific
 /// container take an `id` parameter.
 public struct ContainerClient: Sendable {
-    private static let serviceIdentifier = "com.apple.container.apiserver"
+    private static let serviceIdentifier = ServiceNamespace.apiServer
 
     private let xpcClient: XPCClient
 

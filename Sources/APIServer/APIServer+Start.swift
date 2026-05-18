@@ -90,7 +90,7 @@ extension APIServer {
                 )
 
                 let server = XPCServer(
-                    identifier: "com.apple.container.apiserver",
+                    identifier: ServiceNamespace.apiServer,
                     routes: routes.reduce(
                         into: [String: XPCServer.RouteHandler](),
                         {

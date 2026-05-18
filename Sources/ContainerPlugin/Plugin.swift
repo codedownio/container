@@ -14,12 +14,13 @@
 // limitations under the License.
 //===----------------------------------------------------------------------===//
 
+import ContainerXPC
 import Foundation
 
 /// Value type that contains the plugin configuration, the parsed name of the
 /// plugin and whether a CLI surface for the plugin was found.
 public struct Plugin: Sendable, Codable {
-    private static let machServicePrefix = "com.apple.container."
+    private static var machServicePrefix: String { ServiceNamespace.dottedPrefix }
 
     /// Pathname to installation directory for plugins.
     public let binaryURL: URL
