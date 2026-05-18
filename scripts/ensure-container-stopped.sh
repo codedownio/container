@@ -15,14 +15,26 @@
 
 ALL_DOMAINS=false
 
+# Services are stopped for a single `container` system, identified by its
+# launchd label prefix. This matches the CONTAINER_LAUNCH_PREFIX environment
+# variable used by the `container` binary, so an independent system started
+# with a custom prefix is torn down by running this script with the same
+# variable set. Defaults to the standard `com.apple.container` prefix.
+PREFIX="${CONTAINER_LAUNCH_PREFIX:-com.apple.container}"
+
+# Escape regex metacharacters (notably the dots) so the prefix can be used
+# safely inside the grep patterns below.
+PREFIX_RE=$(printf '%s' "$PREFIX" | sed 's/[][\.*^$/]/\\&/g')
+
 usage() {
     echo "Usage: $0 [-a] [-h]"
-    echo "Stop container services"
+    echo "Stop container services for the prefix '$PREFIX'"
     echo
     echo "Options:"
     echo "a     Stop container services in all launchd domains."
     echo "h     Show this help message."
     echo
+    echo "Set CONTAINER_LAUNCH_PREFIX to target an independent container system."
     exit 1
 }
 
@@ -48,7 +60,7 @@ if $ALL_DOMAINS; then
             continue
         fi
         launchctl print "$domain" 2>/dev/null \
-            | grep -oE 'com\.apple\.container\.[^ ]+' \
+            | grep -oE "${PREFIX_RE}\.[^ ]+" \
             | sort -u \
             | while read -r service; do
                 launchctl bootout "$domain/$service" 2>/dev/null || true
@@ -70,6 +82,6 @@ else
         exit 1
     fi
 
-    launchctl list | grep -e 'com\.apple\.container\W' | awk '{print $3}' \
+    launchctl list | grep -e "${PREFIX_RE}"'\W' | awk '{print $3}' \
         | xargs -I % sh -c 'launchctl bootout '"$domain_string"'/% 2>/dev/null || true'
 fi
