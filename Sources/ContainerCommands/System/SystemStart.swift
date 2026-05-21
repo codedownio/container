@@ -36,7 +36,7 @@ extension Application {
             name: .shortAndLong,
             help: "Path to the root directory for application data",
             transform: { FilePath(FileManager.default.currentDirectoryPath).resolve($0, defaultPath: FilePath($0)) })
-        var appRoot = ApplicationRoot.defaultPath
+        var appRoot = ApplicationRoot.path
 
         @Option(
             name: .long,
