@@ -83,6 +83,7 @@ let package = Package(
                 "container-core-images",
                 "container-network-vmnet",
                 "container-runtime-linux",
+                "machine-apiserver",
             ],
             path: "Sources/Multicall"
         ),
@@ -665,7 +666,7 @@ let package = Package(
             ],
             path: "Sources/Services/MachineAPIService/Server"
         ),
-        .executableTarget(
+        .target(
             name: "machine-apiserver",
             dependencies: [
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
