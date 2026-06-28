@@ -21,6 +21,7 @@ import container_apiserver
 import container_core_images
 import container_network_vmnet
 import container_runtime_linux
+import machine_apiserver
 
 // Generic so Swift resolves to the async `AsyncParsableCommand.main(_:)`;
 // dispatching through `any AsyncParsableCommand.Type` picks the sync overload.
@@ -41,6 +42,8 @@ case "container-network-vmnet":
     await runHelperAsync(NetworkVmnetHelper.self, forwarded)
 case "container-runtime-linux":
     await runHelperAsync(RuntimeLinuxHelper.self, forwarded)
+case "machine-apiserver":
+    await runHelperAsync(MachineAPIServer.self, forwarded)
 default:
     try await runContainerCLI()
 }

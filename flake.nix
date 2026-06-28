@@ -82,7 +82,7 @@
 
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-1wqNyjbbnfZ5+38G1QXe8q4QEpoTbMogr4ibeC4z1/A=";
+        outputHash = "sha256-AGTm2TMahAGk5nGIRdssSlVr6VZ4YH6QHHMiI/r9Cog=";
       };
 
       container = pkgs.stdenvNoCC.mkDerivation {
@@ -153,6 +153,8 @@
           mkdir -p $out/libexec/container/plugins/container-runtime-linux/bin
           mkdir -p $out/libexec/container/plugins/container-network-vmnet/bin
           mkdir -p $out/libexec/container/plugins/container-core-images/bin
+          mkdir -p $out/libexec/container/plugins/machine-apiserver/bin
+          mkdir -p $out/libexec/container/plugins/machine-apiserver/resources
 
           install "$BUILD_BIN/container" $out/bin/container
           ln -sf container $out/bin/container-apiserver
@@ -171,6 +173,15 @@
             $out/libexec/container/plugins/container-core-images/bin/container-core-images
           install Sources/Plugins/CoreImages/config.toml \
             $out/libexec/container/plugins/container-core-images/config.toml
+
+          ln -sf ../../../../../bin/container \
+            $out/libexec/container/plugins/machine-apiserver/bin/machine-apiserver
+          install Sources/Plugins/MachineAPIServer/config.toml \
+            $out/libexec/container/plugins/machine-apiserver/config.toml
+          install Sources/Plugins/MachineAPIServer/Resources/init \
+            $out/libexec/container/plugins/machine-apiserver/resources/init
+          install Sources/Plugins/MachineAPIServer/Resources/create-user.sh \
+            $out/libexec/container/plugins/machine-apiserver/resources/create-user.sh
 
           install scripts/update-container.sh    $out/bin/update-container.sh
           install scripts/uninstall-container.sh $out/bin/uninstall-container.sh
