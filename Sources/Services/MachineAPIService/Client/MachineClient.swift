@@ -25,7 +25,11 @@ import TerminalProgress
 
 /// A client for interacting with the container machine API server.
 public struct MachineClient: Sendable {
-    public static let serviceIdentifier = "com.apple.container.core.machine-apiserver"
+    // Route through ServiceNamespace so the machine-apiserver Mach service is prefixed by
+    // CONTAINER_LAUNCH_PREFIX like every other service. Both the client (here) and the server
+    // (MachineAPIServer+Start uses MachineClient.serviceIdentifier) get the isolated name,
+    // so per-store `container system start` can find its own machine API server.
+    public static let serviceIdentifier = ServiceNamespace.machine
 
     public static func machineConfigFromFlags(
         id: String,

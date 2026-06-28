@@ -50,6 +50,9 @@ public enum ServiceNamespace {
     /// The Mach service name of the core images plugin.
     public static var coreImages: String { "\(prefix).core.container-core-images" }
 
+    /// The Mach service name of the machine API server plugin (a core service).
+    public static var machine: String { "\(prefix).core.machine-apiserver" }
+
     /// The Mach service name prefix for container runtime plugins. Per-container
     /// services append the runtime name and container id.
     public static var runtime: String { "\(prefix).runtime" }
