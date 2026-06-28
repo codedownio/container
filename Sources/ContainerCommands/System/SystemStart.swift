@@ -56,6 +56,12 @@ extension Application {
             help: "Specify whether the default kernel should be installed or not (default: prompt user)")
         var kernelInstall: Bool?
 
+        @Flag(
+            name: .long,
+            inversion: .prefixedEnableDisable,
+            help: "Specify whether the base container filesystem (vminit image) should be pulled from the registry if missing (default: enabled). Pass --disable-init-install to skip the network pull when the image is provided locally.")
+        var initInstall: Bool?
+
         @Option(
             help: "Number of seconds to wait for API service to become responsive",
             transform: {
@@ -154,8 +160,14 @@ extension Application {
                 )
             }
 
-            if await !initImageExists(containerSystemConfig: containerSystemConfig) {
-                try? await installInitialFilesystem(initImage: containerSystemConfig.vminit.image)
+            // The base container filesystem (vminit) is pulled from a registry
+            // (ghcr.io) if missing. Pass --disable-init-install to skip this network
+            // pull when the image has been provided locally; this avoids hanging
+            // `system start` on a slow or offline network.
+            if initInstall ?? true {
+                if await !initImageExists(containerSystemConfig: containerSystemConfig) {
+                    try? await installInitialFilesystem(initImage: containerSystemConfig.vminit.image)
+                }
             }
 
             guard await !kernelExists() else {
