@@ -82,7 +82,7 @@
 
         outputHashMode = "recursive";
         outputHashAlgo = "sha256";
-        outputHash = "sha256-AGTm2TMahAGk5nGIRdssSlVr6VZ4YH6QHHMiI/r9Cog=";
+        outputHash = "sha256-oJaBNBV2YqJGjrmTdKHW2jsNBEO0rF6znnUxTleNfm8=";
       };
 
       container = pkgs.stdenvNoCC.mkDerivation {
@@ -155,6 +155,8 @@
           mkdir -p $out/libexec/container/plugins/container-core-images/bin
           mkdir -p $out/libexec/container/plugins/machine-apiserver/bin
           mkdir -p $out/libexec/container/plugins/machine-apiserver/resources
+          mkdir -p $out/libexec/container/plugins/k8s/bin
+          mkdir -p $out/libexec/container/plugins/k8s/resources
 
           install "$BUILD_BIN/container" $out/bin/container
           ln -sf container $out/bin/container-apiserver
@@ -182,6 +184,12 @@
             $out/libexec/container/plugins/machine-apiserver/resources/init
           install Sources/Plugins/MachineAPIServer/Resources/create-user.sh \
             $out/libexec/container/plugins/machine-apiserver/resources/create-user.sh
+
+          install "$BUILD_BIN/k8s" $out/libexec/container/plugins/k8s/bin/k8s
+          install Sources/Plugins/K8s/config.toml \
+            $out/libexec/container/plugins/k8s/config.toml
+          install Sources/Plugins/K8s/Resources/kindnet.yaml \
+            $out/libexec/container/plugins/k8s/resources/kindnet.yaml
 
           install scripts/update-container.sh    $out/bin/update-container.sh
           install scripts/uninstall-container.sh $out/bin/uninstall-container.sh
