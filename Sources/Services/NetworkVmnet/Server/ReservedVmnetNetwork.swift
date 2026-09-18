@@ -31,6 +31,8 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
     private struct State {
         var status: NetworkStatus?
         var network: vmnet_network_ref?
+        /// Pins the kernel bridge for the helper's lifetime; see `startAnchorInterface`.
+        var anchor: interface_ref?
     }
 
     private struct NetworkInfo {
@@ -83,6 +85,8 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
 
             let networkInfo = try startNetwork(configuration: configuration, log: log)
 
+            state.anchor = try Self.startAnchorInterface(network: networkInfo.network, id: configuration.id, log: log)
+
             state.status = NetworkStatus(
                 ipv4Subnet: networkInfo.ipv4Subnet,
                 ipv4Gateway: networkInfo.ipv4Gateway,
@@ -90,6 +94,45 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
             )
             state.network = networkInfo.network
         }
+    }
+
+    /// Start one always-on interface on the network and never stop it, so the bridge ifnet and its
+    /// gateway exist from here until the helper exits.
+    ///
+    /// Without it the bridge is destroyed when the last interface detaches. Its unit number can then
+    /// be reassigned to a sibling network, and that network's later teardown destroys the recycled
+    /// ifnet out from under our live attachments, which presents as a network that is up but has
+    /// silently lost all egress. Holding a reference removes the window entirely.
+    private static func startAnchorInterface(network: vmnet_network_ref, id: String, log: Logger) throws -> interface_ref {
+        let description = xpc_dictionary_create(nil, nil, 0)
+        xpc_dictionary_set_bool(description, vmnet_allocate_mac_address_key, true)
+
+        let queue = DispatchQueue(label: "com.apple.container.vmnet.anchor.\(id)")
+        let done = DispatchSemaphore(value: 0)
+        let startStatus = Mutex<vmnet_return_t>(.VMNET_SUCCESS)
+
+        guard
+            let anchor = vmnet_interface_start_with_network(network, description, queue, { status, _ in
+                startStatus.withLock { $0 = status }
+                done.signal()
+            })
+        else {
+            throw ContainerizationError(.unsupported, message: "failed to start anchor interface for network \(id)")
+        }
+
+        // The completion runs on our own queue, so this cannot deadlock against the caller's lock.
+        // Bounded anyway: a wedged vmnet must not hold network start open forever.
+        guard done.wait(timeout: .now() + .seconds(30)) == .success else {
+            throw ContainerizationError(.internalError, message: "anchor interface for network \(id) did not start within 30s")
+        }
+
+        let status = startStatus.withLock { $0 }
+        guard status == .VMNET_SUCCESS else {
+            throw ContainerizationError(.unsupported, message: "anchor interface for network \(id) failed to start with status \(status)")
+        }
+
+        log.info("pinned vmnet bridge with anchor interface", metadata: ["id": "\(id)"])
+        return anchor
     }
 
     private static func serialize_network_ref(ref: vmnet_network_ref) throws -> XPCMessage {
