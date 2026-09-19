@@ -83,9 +83,23 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
                 throw ContainerizationError(.invalidArgument, message: "cannot start network \(configuration.id): already started")
             }
 
+            let networkBegan = ContinuousClock.now
             let networkInfo = try startNetwork(configuration: configuration, log: log)
+            let networkElapsed = ContinuousClock.now - networkBegan
 
+            let anchorBegan = ContinuousClock.now
             state.anchor = try Self.startAnchorInterface(network: networkInfo.network, id: configuration.id, log: log)
+            let anchorElapsed = ContinuousClock.now - anchorBegan
+
+            // Network start sits on the sandbox-creation critical path, which has a 120s budget.
+            log.info(
+                "vmnet network start timing",
+                metadata: [
+                    "id": "\(configuration.id)",
+                    "network": "\(networkElapsed)",
+                    "anchor": "\(anchorElapsed)",
+                ]
+            )
 
             state.status = NetworkStatus(
                 ipv4Subnet: networkInfo.ipv4Subnet,
@@ -107,31 +121,20 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
         let description = xpc_dictionary_create(nil, nil, 0)
         xpc_dictionary_set_bool(description, vmnet_allocate_mac_address_key, true)
 
+        // Deliberately does not wait for the completion handler. `start()` is called from an async
+        // context and holds the state lock, so blocking here ties up a cooperative thread for as
+        // long as vmnet takes, and every concurrent network start pays it. The returned handle is
+        // what pins the bridge; the handler only reports the outcome.
         let queue = DispatchQueue(label: "com.apple.container.vmnet.anchor.\(id)")
-        let done = DispatchSemaphore(value: 0)
-        let startStatus = Mutex<vmnet_return_t>(.VMNET_SUCCESS)
-
         guard
             let anchor = vmnet_interface_start_with_network(network, description, queue, { status, _ in
-                startStatus.withLock { $0 = status }
-                done.signal()
+                guard status != .VMNET_SUCCESS else { return }
+                log.error("anchor interface failed to start", metadata: ["id": "\(id)", "status": "\(status)"])
             })
         else {
             throw ContainerizationError(.unsupported, message: "failed to start anchor interface for network \(id)")
         }
 
-        // The completion runs on our own queue, so this cannot deadlock against the caller's lock.
-        // Bounded anyway: a wedged vmnet must not hold network start open forever.
-        guard done.wait(timeout: .now() + .seconds(30)) == .success else {
-            throw ContainerizationError(.internalError, message: "anchor interface for network \(id) did not start within 30s")
-        }
-
-        let status = startStatus.withLock { $0 }
-        guard status == .VMNET_SUCCESS else {
-            throw ContainerizationError(.unsupported, message: "anchor interface for network \(id) failed to start with status \(status)")
-        }
-
-        log.info("pinned vmnet bridge with anchor interface", metadata: ["id": "\(id)"])
         return anchor
     }
 
