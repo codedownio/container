@@ -117,8 +117,52 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
         }
     }
 
-    /// Start one always-on interface on the network and never stop it, so the bridge ifnet and its
-    /// gateway exist from here until the helper exits.
+    /// Stop the anchor, releasing the network object vmnet retains on its behalf.
+    ///
+    /// Exiting with the anchor still started strands the network's subnet: InternetSharing does not
+    /// reclaim one whose client died holding a live interface, and after 64 of them every
+    /// `vmnet_network_create` on the host fails with `VMNET_FAILURE` until reboot.
+    public func stop() async {
+        let anchor = stateMutex.withLock { state -> Anchor? in
+            let anchor = state.anchor
+            state.anchor = nil
+            return anchor
+        }
+        guard let anchor else { return }
+
+        let (id, log) = (configuration.id, self.log)
+
+        // vmnet schedules the handler only when the call itself succeeds, so resume on both paths.
+        // Nothing bounds the wait but launchd's SIGKILL, and the stop is prompt in practice.
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            let resumed = Mutex(false)
+            let resumeOnce: @Sendable () -> Void = {
+                let first = resumed.withLock { done -> Bool in
+                    guard !done else { return false }
+                    done = true
+                    return true
+                }
+                if first {
+                    continuation.resume()
+                }
+            }
+
+            let status = vmnet_stop_interface(anchor.interface, anchor.queue) { status in
+                if status != .VMNET_SUCCESS {
+                    log.error("anchor interface failed to stop", metadata: ["id": "\(id)", "status": "\(status)"])
+                }
+                resumeOnce()
+            }
+            guard status == .VMNET_SUCCESS else {
+                log.error("failed to schedule anchor interface stop", metadata: ["id": "\(id)", "status": "\(status)"])
+                resumeOnce()
+                return
+            }
+        }
+    }
+
+    /// Start one interface on the network and hold it until `stop()`, so the bridge ifnet and its
+    /// gateway exist for as long as the network does.
     ///
     /// Without it the bridge is destroyed when the last interface detaches. Its unit number can then
     /// be reassigned to a sibling network, and that network's later teardown destroys the recycled
