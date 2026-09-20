@@ -32,7 +32,14 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
         var status: NetworkStatus?
         var network: vmnet_network_ref?
         /// Pins the kernel bridge for the helper's lifetime; see `startAnchorInterface`.
-        var anchor: interface_ref?
+        var anchor: Anchor?
+    }
+
+    private struct Anchor {
+        let interface: interface_ref
+        /// vmnet does not retain this, and dispatches the start completion onto it after
+        /// `vmnet_interface_start_with_network` has returned.
+        let queue: DispatchQueue
     }
 
     private struct NetworkInfo {
@@ -117,7 +124,7 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
     /// be reassigned to a sibling network, and that network's later teardown destroys the recycled
     /// ifnet out from under our live attachments, which presents as a network that is up but has
     /// silently lost all egress. Holding a reference removes the window entirely.
-    private static func startAnchorInterface(network: vmnet_network_ref, id: String, log: Logger) throws -> interface_ref {
+    private static func startAnchorInterface(network: vmnet_network_ref, id: String, log: Logger) throws -> Anchor {
         let description = xpc_dictionary_create(nil, nil, 0)
         xpc_dictionary_set_bool(description, vmnet_allocate_mac_address_key, true)
 
@@ -127,7 +134,7 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
         // what pins the bridge; the handler only reports the outcome.
         let queue = DispatchQueue(label: "com.apple.container.vmnet.anchor.\(id)")
         guard
-            let anchor = vmnet_interface_start_with_network(network, description, queue, { status, _ in
+            let interface = vmnet_interface_start_with_network(network, description, queue, { status, _ in
                 guard status != .VMNET_SUCCESS else { return }
                 log.error("anchor interface failed to start", metadata: ["id": "\(id)", "status": "\(status)"])
             })
@@ -135,7 +142,7 @@ public final class ReservedVmnetNetwork: ContainerNetworkServer.Network {
             throw ContainerizationError(.unsupported, message: "failed to start anchor interface for network \(id)")
         }
 
-        return anchor
+        return Anchor(interface: interface, queue: queue)
     }
 
     private static func serialize_network_ref(ref: vmnet_network_ref) throws -> XPCMessage {
